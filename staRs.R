@@ -79,60 +79,47 @@ sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
   
 }
 
-set.seed(11)
-# Generate simulated data sets
-noEffect <- sim(data = stars,
-                formula = magnitude ~ temp,
-                effect = 0)
 
-noEffect[[4]]
-simMod2 <- lm(response ~ predictor, data = noEffect[[4]])
-# Extract p-value
-summary(simMod2)[[4]][[8]]
-simMod2$model
+# Generate simulated data sets
 
 ## Size of simulated data tests ################################################
 
-# Simulation of no effect
-pred <- c()
-for (i in 1:length(noEffect)) {
+# FUNCTION: size
+size <- function(data) {
   
-  mod <- lm(response ~ predictor, data = noEffect[[i]])
-  pred[i] <- summary(mod)[[4]][[8]]
+  pred <- c()
+  
+  for (i in 1:length(data)) {
     
+    mod <- lm(response ~ predictor, data = data[[i]])
+    # Extract p-value from each model summary
+    pred[i] <- summary(mod)[[4]][[8]]
+    
+  }
+  
+  hist(pred, breaks = 20)
+  abline(v = 0.05, col = "firebrick", lwd = 3)
+  
+  size <- length(pred[pred <= 0.05]) / length(pred)
+  
+  return(size)
+  
 }
 
-hist(pred, breaks = 20)
-abline(v = 0.05, col = "firebrick", lwd = 3)
-
-size <- length(pred[pred <= 0.05]) / length(pred)
-
-# Simulation of effect
+# Simulate data with effects of temperature on magnitude
 set.seed(11)
 tempEffect <- sim(data = stars,
                   formula = magnitude ~ temp,
-                  effect = 1e-2)
+                  effect = 8e-5)
+size(tempEffect)
 
-tempEffect[[1]]
-effectMod <- lm(response ~ predictor, data = tempEffect[[1]])
-# Extract p-value
-summary(effectMod)
-summary(effectMod)[[4]][[8]]
+# Simulate data with no effect of temperature on magnitude
+set.seed(11)
+noEffect <- sim(data = stars,
+                formula = magnitude ~ temp,
+                effect = 0)
+size(noEffect)
 
-# Loop over all simulated data sets
-pred1 <- c()
-for (i in 1:length(tempEffect)) {
-  
-  mod <- lm(response ~ predictor, data = tempEffect[[i]])
-  pred1[i] <- summary(mod)[[4]][[8]]
-  
-}
 
-hist(pred1, breaks = 20)
-abline(v = 0.05, col = "firebrick", lwd = 3)
-
-size <- length(pred1[pred1 <= 0.05]) / length(pred1)
-size
-
-# Power of simulated data tests
+## Power of simulated data tests ###############################################
 
