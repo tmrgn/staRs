@@ -80,17 +80,27 @@ sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
 }
 
 set.seed(11)
-# Generate simulated datasets
+# Generate simulated data sets
 simData <- sim(data = stars,
                formula = magnitude ~ temp,
                effect = 0)
 
-simData
-
-simData[[3]]
-simMod2 <- lm(response ~ predictor, data = simData[[3]])
-summary(simMod2)
+simData[[4]]
+simMod2 <- lm(response ~ predictor, data = simData[[4]])
+# Extract p-value
+summary(simMod2)[[4]][[8]]
+simMod2$model
 
 # Size of simulated data tests
+pred <- c()
+for (i in 1:length(simData)) {
+  
+  mod <- lm(response ~ predictor, data = simData[[i]])
+  pred[i] <- summary(mod)[[4]][[8]]
+    
+}
+
+hist(pred, breaks = 20)
+abline(v = 0.05, col = "firebrick", lwd = 3)
 
 # Power of simulated data tests
