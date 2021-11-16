@@ -51,3 +51,46 @@ pVal <- sum(abs(simCoefs) >= absObsCoef) / nRepeat
 # /randomly generated distribution of coefficient estimates, given that H0
 # /was true, strongly suggesting that we should reject H0. The observed
 # /difference is extremely rare if the groups were randomly assigned.
+
+
+# Simulation scenarios #########################################################
+
+# FUNCTION: sim
+sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
+  
+  # Extract response variable from passed-in formula
+  # response <- subset(data, select = as.character(formula[[2]]))
+  # Extract predictive variable from passed-in formula
+  predictor <- subset(data, select = as.character(formula[[3]]))
+  
+  # Fit model using original dataset
+  mod <- lm(formula, data = data)
+  # Extract observed estimates from model
+  intercept <- mod$coefficients[1]
+  beta1 <- mod$coefficients[2]
+  
+  # Simulate dataset
+  simList <- replicate(sims,
+                       data.frame(response = rnorm(n, intercept + (effect * predictor[[1]])),
+                                  predictor = rnorm(n, predictor[[1]], sd(predictor[[1]]))),
+                       simplify = FALSE)
+  
+  return(simList)
+  
+}
+
+set.seed(11)
+# Generate simulated datasets
+simData <- sim(data = stars,
+               formula = magnitude ~ temp,
+               effect = 0)
+
+simData
+
+simData[[3]]
+simMod2 <- lm(response ~ predictor, data = simData[[3]])
+summary(simMod2)
+
+# Size of simulated data tests
+
+# Power of simulated data tests
