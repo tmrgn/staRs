@@ -81,21 +81,23 @@ sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
 
 set.seed(11)
 # Generate simulated data sets
-simData <- sim(data = stars,
-               formula = magnitude ~ temp,
-               effect = 0)
+noEffect <- sim(data = stars,
+                formula = magnitude ~ temp,
+                effect = 0)
 
-simData[[4]]
-simMod2 <- lm(response ~ predictor, data = simData[[4]])
+noEffect[[4]]
+simMod2 <- lm(response ~ predictor, data = noEffect[[4]])
 # Extract p-value
 summary(simMod2)[[4]][[8]]
 simMod2$model
 
-# Size of simulated data tests
+## Size of simulated data tests ################################################
+
+# Simulation of no effect
 pred <- c()
-for (i in 1:length(simData)) {
+for (i in 1:length(noEffect)) {
   
-  mod <- lm(response ~ predictor, data = simData[[i]])
+  mod <- lm(response ~ predictor, data = noEffect[[i]])
   pred[i] <- summary(mod)[[4]][[8]]
     
 }
@@ -103,4 +105,34 @@ for (i in 1:length(simData)) {
 hist(pred, breaks = 20)
 abline(v = 0.05, col = "firebrick", lwd = 3)
 
+size <- length(pred[pred <= 0.05]) / length(pred)
+
+# Simulation of effect
+set.seed(11)
+tempEffect <- sim(data = stars,
+                  formula = magnitude ~ temp,
+                  effect = 1e-2)
+
+tempEffect[[1]]
+effectMod <- lm(response ~ predictor, data = tempEffect[[1]])
+# Extract p-value
+summary(effectMod)
+summary(effectMod)[[4]][[8]]
+
+# Loop over all simulated data sets
+pred1 <- c()
+for (i in 1:length(tempEffect)) {
+  
+  mod <- lm(response ~ predictor, data = tempEffect[[i]])
+  pred1[i] <- summary(mod)[[4]][[8]]
+  
+}
+
+hist(pred1, breaks = 20)
+abline(v = 0.05, col = "firebrick", lwd = 3)
+
+size <- length(pred1[pred1 <= 0.05]) / length(pred1)
+size
+
 # Power of simulated data tests
+
