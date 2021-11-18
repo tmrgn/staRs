@@ -59,7 +59,7 @@ pVal <- sum(abs(simCoefs) >= absObsCoef) / nRepeat
 sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
   
   # Extract response variable from passed-in formula
-  # response <- subset(data, select = as.character(formula[[2]]))
+  response <- subset(data, select = as.character(formula[[2]]))
   # Extract predictive variable from passed-in formula
   predictor <- subset(data, select = as.character(formula[[3]]))
   
@@ -71,14 +71,13 @@ sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
   
   # Simulate dataset
   simList <- replicate(sims,
-                       data.frame(response = rnorm(n, intercept + (effect * predictor[[1]])),
-                                  predictor = rnorm(n, predictor[[1]], sd(predictor[[1]]))),
+                       data.frame(response = rnorm(n, mean(response[[1]]), sd(response[[1]])),
+                                  predictor = rnorm(n, mean(predictor[[1]]), sd(predictor[[1]]))),
                        simplify = FALSE)
   
   return(simList)
   
 }
-
 
 # Generate simulated data sets
 
@@ -87,20 +86,20 @@ sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
 # FUNCTION: size
 size <- function(data) {
   
-  pred <- c()
+  pVals <- c()
   
-  for (i in 1:length(data)) {
+  for (i in 1:nrow(data[[1]])) {
     
     mod <- lm(response ~ predictor, data = data[[i]])
     # Extract p-value from each model summary
-    pred[i] <- summary(mod)[[4]][[8]]
+    pVals[i] <- summary(mod)[[4]][[8]]
     
   }
   
-  hist(pred, breaks = 20)
+  hist(pVals, breaks = 20)
   abline(v = 0.05, col = "firebrick", lwd = 3)
   
-  size <- length(pred[pred <= 0.05]) / length(pred)
+  size <- length(pVals[pVals <= 0.05]) / length(pVals)
   
   return(size)
   
@@ -110,7 +109,8 @@ size <- function(data) {
 set.seed(11)
 tempEffect <- sim(data = stars,
                   formula = magnitude ~ temp,
-                  effect = 8e-5)
+                  effect = -1e-10)
+tempEffect[[1]]
 size(tempEffect)
 
 # Simulate data with no effect of temperature on magnitude
@@ -118,6 +118,7 @@ set.seed(11)
 noEffect <- sim(data = stars,
                 formula = magnitude ~ temp,
                 effect = 0)
+noEffect[[1]]
 size(noEffect)
 
 
