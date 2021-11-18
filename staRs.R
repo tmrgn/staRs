@@ -19,6 +19,7 @@ set.seed(11)
 
 # Loop over simulations to get coefficient estimates
 # INPUTS:
+# data - list containing a unique data frame per list element
 # nRepeat - number of randomisation iterations
 randTest <- function(data, nRepeat = 10) {
   
@@ -41,7 +42,7 @@ randTest <- function(data, nRepeat = 10) {
       simMod <- lm(response ~ predictor, data = reshuffled)
       
       # Obtain coefficient estimate for simulated model
-      simCoefs[i][j] <- simMod$coefficients["predictor"]
+      simCoefs[[i]] <- simMod$coefficients["predictor"]
       
     }
   
@@ -156,7 +157,8 @@ size(pValsNoEffect, threshold = 0.05)
 # Randomisation test
 set.seed(11)
 noEffectRand <- randTest(noEffect)
-hist(noEffectRand)
+noEffectRand
+hist(noEffectRand, breaks = 20)
 abline(v = 0, col = "firebrick", lwd = 3)
 # Threshold equal to effect size
 size(noEffectRand, threshold = 0)
