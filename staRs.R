@@ -20,26 +20,31 @@ set.seed(11)
 # Loop over simulations to get coefficient estimates
 # INPUTS:
 # nRepeat - number of randomisation iterations
-randTest <- function(data, nRepeat = 1000) {
+randTest <- function(data, nRepeat = 10) {
   
   # Initialise list to store simulated coefficients
   simCoefs <- list()
-
-  # Loop over simulations to get coefficient estimates
-  for (i in 1:nRepeat) {
+  
+  # Loop over each simulated data set
+  for (i in 1:length(data)) {
     
-    reshuffled <- stars
+    reshuffled <- data[[i]]
     
-    # Randomise magnitude values
-    reshuffled$magnitude <- sample(reshuffled$magnitude,
-                                   size = nrow(reshuffled), replace = FALSE)
-    
-    # Fit model with randomised values
-    simMod <- lm(magnitude ~ temp, data = reshuffled)
-    
-    # Obtain coefficient estimate for simulated model
-    simCoefs[i] <- simMod$coefficients["temp"]
-    
+    # Loop over simulations to get coefficient estimates
+    for (j in 1:nRepeat) {
+      
+      # Randomise magnitude values
+      reshuffled$response <- sample(reshuffled$response,
+                                    size = nrow(reshuffled), replace = FALSE)
+      
+      # Fit model with randomised values
+      simMod <- lm(response ~ predictor, data = reshuffled)
+      
+      # Obtain coefficient estimate for simulated model
+      simCoefs[i][j] <- simMod$coefficients["predictor"]
+      
+    }
+  
   }
   
   simCoefs <- unlist(simCoefs)
@@ -71,14 +76,14 @@ sim <- function(sims = 1000, data, n = nrow(data), formula, effect) {
   predictor <- subset(data, select = as.character(formula[[3]]))
   
   # Fit model using original dataset
-  #mod <- lm(formula, data = data)
+  mod <- lm(formula, data = data)
   # Extract observed estimates from model
-  #intercept <- mod$coefficients[1]
+  intercept <- mod$coefficients[1]
   #beta1 <- mod$coefficients[2]
   
   # Simulate dataset
   simList <- replicate(sims,
-                       data.frame(response = rnorm(n, mean(response[[1]]), sd(response[[1]])),
+                       data.frame(response = rnorm(n, mean(response[[1]]) + sample(c(-1, 1), size = n, replace = TRUE, prob = c(0.36, 0.64)) * (effect * predictor[[1]]), sd(response[[1]])),
                                   predictor = rnorm(n, mean(predictor[[1]]), sd(predictor[[1]]))),
                        simplify = FALSE)
   
@@ -113,41 +118,48 @@ pValues <- function(data) {
 ## Size of simulated data tests ################################################
 
 # FUNCTION: size
-size <- function(pVals) {
+size <- function(values, threshold) {
   
-  hist(pVals, breaks = 20)
-  abline(v = 0.05, col = "firebrick", lwd = 3)
-  
-  size <- length(pVals[pVals <= 0.05]) / length(pVals)
+  size <- length(values[values <= threshold]) / length(values)
   
   return(size)
   
 }
 
-# Simulate data with effects of temperature on magnitude
+## Simulate data with effects of temperature on magnitude
 set.seed(11)
 tempEffect <- sim(data = stars,
                   formula = magnitude ~ temp,
-                  effect = -1e-10)
+                  effect = -1e-4)
 
 pValsTempEffect <- pValues(tempEffect)
-size(pValsTempEffect)
+# Significance level 5%
+size(pValsTempEffect, 0.05)
+
 # Perform randomisation test
+set.seed(11)
+tempEffectRand <- randTest(tempEffect)
+hist(tempEffectRand)
+abline(v = -1e-4, col = "firebrick", lwd = 3)
+size(tempEffectRand, threshold = -1e-4)
 
 
-
-# Simulate data with no effect of temperature on magnitude
+## Simulate data with no effect of temperature on magnitude
 set.seed(11)
 noEffect <- sim(data = stars,
                 formula = magnitude ~ temp,
                 effect = 0)
 
 pValsNoEffect <- pValues(noEffect)
-size(pValsNoEffect)
+size(pValsNoEffect, threshold = 0.05)
 
+# Randomisation test
+set.seed(11)
 noEffectRand <- randTest(noEffect)
-pValsNoEffectRand <- pValues(noEffectRand)
-size(noEffectRand)
+hist(noEffectRand)
+abline(v = 0, col = "firebrick", lwd = 3)
+# Threshold equal to effect size
+size(noEffectRand, threshold = 0)
 
 
 ## Power of simulated data tests ###############################################
