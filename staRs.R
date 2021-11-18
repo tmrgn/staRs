@@ -16,29 +16,36 @@ summary(starMod)
 
 # Randomisation test
 set.seed(11)
-# Initialise list to store simulated coefficients
-simCoefs <- list()
-# Number of iterations
-nRepeat <- 1000
 
 # Loop over simulations to get coefficient estimates
-for (i in 1:nRepeat) {
+# INPUTS:
+# nRepeat - number of randomisation iterations
+randTest <- function(data, nRepeat = 1000) {
   
-  reshuffled <- stars
+  # Initialise list to store simulated coefficients
+  simCoefs <- list()
+
+  # Loop over simulations to get coefficient estimates
+  for (i in 1:nRepeat) {
+    
+    reshuffled <- stars
+    
+    # Randomise magnitude values
+    reshuffled$magnitude <- sample(reshuffled$magnitude,
+                                   size = nrow(reshuffled), replace = FALSE)
+    
+    # Fit model with randomised values
+    simMod <- lm(magnitude ~ temp, data = reshuffled)
+    
+    # Obtain coefficient estimate for simulated model
+    simCoefs[i] <- simMod$coefficients["temp"]
+    
+  }
   
-  # Randomise magnitude values
-  reshuffled$magnitude <- sample(reshuffled$magnitude,
-                                 size = nrow(reshuffled), replace = FALSE)
-  
-  # Fit model with randomised values
-  simMod <- lm(magnitude ~ temp, data = reshuffled)
-  
-  # Obtain coefficient estimate for simulated model
-  simCoefs[i] <- simMod$coefficients["temp"]
+  simCoefs <- unlist(simCoefs)
+  return(simCoefs)
   
 }
-
-simCoefs <- unlist(simCoefs)
 
 hist(simCoefs, xlim = c(-7.5e-04, 5e-04))
 abline(v = starMod$coefficients["temp"], col = "firebrick", lwd = 3)
@@ -56,7 +63,7 @@ pVal <- sum(abs(simCoefs) >= absObsCoef) / nRepeat
 # Simulation scenarios #########################################################
 
 # FUNCTION: sim
-sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
+sim <- function(sims = 1000, data, n = nrow(data), formula, effect) {
   
   # Extract response variable from passed-in formula
   response <- subset(data, select = as.character(formula[[2]]))
@@ -64,10 +71,10 @@ sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
   predictor <- subset(data, select = as.character(formula[[3]]))
   
   # Fit model using original dataset
-  mod <- lm(formula, data = data)
+  #mod <- lm(formula, data = data)
   # Extract observed estimates from model
-  intercept <- mod$coefficients[1]
-  beta1 <- mod$coefficients[2]
+  #intercept <- mod$coefficients[1]
+  #beta1 <- mod$coefficients[2]
   
   # Simulate dataset
   simList <- replicate(sims,
@@ -79,22 +86,34 @@ sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
   
 }
 
-# Generate simulated data sets
-
-## Size of simulated data tests ################################################
-
-# FUNCTION: size
-size <- function(data) {
+# FUNCTION: pVal - calculate p-values for covariate in simple linear regression
+# INPUTS:
+# data - list object containing data sets with one dependent, one predictor variable
+pValues <- function(data) {
   
+  # Initialise empty vector to store p-values
   pVals <- c()
   
-  for (i in 1:nrow(data[[1]])) {
+  # Loop over each data set in the list passed
+  for (i in 1:length(data)) {
     
+    # Fit the model
     mod <- lm(response ~ predictor, data = data[[i]])
     # Extract p-value from each model summary
     pVals[i] <- summary(mod)[[4]][[8]]
     
   }
+  
+  return(pVals)
+  
+}
+
+# Generate simulated data sets
+
+## Size of simulated data tests ################################################
+
+# FUNCTION: size
+size <- function(pVals) {
   
   hist(pVals, breaks = 20)
   abline(v = 0.05, col = "firebrick", lwd = 3)
@@ -110,17 +129,32 @@ set.seed(11)
 tempEffect <- sim(data = stars,
                   formula = magnitude ~ temp,
                   effect = -1e-10)
-tempEffect[[1]]
-size(tempEffect)
+
+pValsTempEffect <- pValues(tempEffect)
+size(pValsTempEffect)
+# Perform randomisation test
+
+
 
 # Simulate data with no effect of temperature on magnitude
 set.seed(11)
 noEffect <- sim(data = stars,
                 formula = magnitude ~ temp,
                 effect = 0)
-noEffect[[1]]
-size(noEffect)
+
+pValsNoEffect <- pValues(noEffect)
+size(pValsNoEffect)
+
+noEffectRand <- randTest(noEffect)
+pValsNoEffectRand <- pValues(noEffectRand)
+size(noEffectRand)
 
 
 ## Power of simulated data tests ###############################################
 
+# FUNCTION: power
+power <- function(data) {
+  
+  
+  
+}
