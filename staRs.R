@@ -21,7 +21,7 @@ set.seed(11)
 # INPUTS:
 # data - list containing a unique data frame per list element
 # nRepeat - number of randomisation iterations
-randTest <- function(data, nRepeat = 10) {
+randTest <- function(data, nRepeat = 100) {
   
   # Initialise list to store simulated coefficients
   simCoefs <- list()
@@ -53,8 +53,10 @@ randTest <- function(data, nRepeat = 10) {
   
 }
 
+obsRand <- randTest(stars, nRepeat = 1000)
 hist(simCoefs, xlim = c(-7.5e-04, 5e-04))
 abline(v = starMod$coefficients["temp"], col = "firebrick", lwd = 3)
+stars[[1]]
 
 # Randomisation test p-value
 absObsCoef <- abs(starMod$coefficients["temp"])
@@ -108,67 +110,38 @@ pValues <- function(data) {
     # Extract p-value from each model summary
     pVals[i] <- summary(mod)[[4]][[8]]
     
+    # Remember to delete
+    if (i == 1) {
+      
+      print(summary(mod))
+      
+    }
+    
   }
   
   return(pVals)
   
 }
 
-# Generate simulated data sets
-
 ## Size of simulated data tests ################################################
 
 # FUNCTION: size
 size <- function(values, threshold) {
   
-  size <- length(values[values <= threshold]) / length(values)
-  
+  size <- length(values[values < threshold]) / length(values)
+
   return(size)
   
 }
-
-## Simulate data with effects of temperature on magnitude
-set.seed(11)
-tempEffect <- sim(data = stars,
-                  formula = magnitude ~ temp,
-                  effect = -1e-4)
-
-pValsTempEffect <- pValues(tempEffect)
-# Significance level 5%
-size(pValsTempEffect, 0.05)
-
-# Perform randomisation test
-set.seed(11)
-tempEffectRand <- randTest(tempEffect)
-hist(tempEffectRand)
-abline(v = -1e-4, col = "firebrick", lwd = 3)
-size(tempEffectRand, threshold = -1e-4)
-
-
-## Simulate data with no effect of temperature on magnitude
-set.seed(11)
-noEffect <- sim(data = stars,
-                formula = magnitude ~ temp,
-                effect = 0)
-
-pValsNoEffect <- pValues(noEffect)
-size(pValsNoEffect, threshold = 0.05)
-
-# Randomisation test
-set.seed(11)
-noEffectRand <- randTest(noEffect)
-noEffectRand
-hist(noEffectRand, breaks = 20)
-abline(v = 0, col = "firebrick", lwd = 3)
-# Threshold equal to effect size
-size(noEffectRand, threshold = 0)
 
 
 ## Power of simulated data tests ###############################################
 
 # FUNCTION: power
-power <- function(data) {
+power <- function(values, threshold) {
   
+  power <- length(values[values >= threshold]) / length(values)
   
+  return(power)
   
 }
