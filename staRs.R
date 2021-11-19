@@ -71,7 +71,7 @@ pVal <- sum(abs(simCoefs) >= absObsCoef) / nRepeat
 # Simulation scenarios #########################################################
 
 # FUNCTION: sim
-sim <- function(sims = 1000, data, n = nrow(data), formula, effect) {
+sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
   
   # Extract response variable from passed-in formula
   response <- subset(data, select = as.character(formula[[2]]))
@@ -82,12 +82,11 @@ sim <- function(sims = 1000, data, n = nrow(data), formula, effect) {
   mod <- lm(formula, data = data)
   # Extract observed estimates from model
   intercept <- mod$coefficients[1]
-  #beta1 <- mod$coefficients[2]
   
   # Simulate dataset
   simList <- replicate(sims,
-                       data.frame(response = rnorm(n, mean(response[[1]]) + sample(c(-1, 1), size = n, replace = TRUE, prob = c(0.36, 0.64)) * (effect * predictor[[1]]), sd(response[[1]])),
-                                  predictor = rnorm(n, mean(predictor[[1]]), sd(predictor[[1]]))),
+                       data.frame(predictor = rnorm(n, mean(predictor[[1]]), sd(predictor[[1]])),
+                                  response = rnorm(predictor[[1]] + sample(c(-1, 1), size = nrow(data), replace = TRUE, prob = c(0.36, 0.64)) * (effect * predictor[[1]]), sd(response[[1]]))),
                        simplify = FALSE)
   
   return(simList)
@@ -109,15 +108,8 @@ pValues <- function(data) {
     mod <- lm(response ~ predictor, data = data[[i]])
     # Extract p-value from each model summary
     pVals[i] <- summary(mod)[[4]][[8]]
-    
-    # Remember to delete
-    if (i == 1) {
-      
-      print(summary(mod))
-      
+     
     }
-    
-  }
   
   return(pVals)
   
@@ -140,7 +132,7 @@ size <- function(values, threshold) {
 # FUNCTION: power
 power <- function(values, threshold) {
   
-  power <- length(values[values >= threshold]) / length(values)
+  power <- length(values[values <= threshold]) / length(values)
   
   return(power)
   
