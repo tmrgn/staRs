@@ -3,6 +3,8 @@ library(dslabs)
 library(tidyverse)
 library(car)
 
+## TO DO: CHANGE NAME OF COLUMNS IN SIM DATA SO PVALUES FUNCTION WORKS
+
 # Load dataset
 stars <- dslabs::stars
 
@@ -53,6 +55,7 @@ randTest <- function(data, nRepeat = 100) {
   
 }
 
+# Sort out
 obsRand <- randTest(stars, nRepeat = 1000)
 hist(simCoefs, xlim = c(-7.5e-04, 5e-04))
 abline(v = starMod$coefficients["temp"], col = "firebrick", lwd = 3)
@@ -80,16 +83,24 @@ sim <- function(sims = 100, data, n = nrow(data), formula, effect) {
   
   # Fit model using original dataset
   mod <- lm(formula, data = data)
-  # Extract observed estimates from model
+  # Extract observed intercept from model
   intercept <- mod$coefficients[1]
   
-  # Simulate dataset
-  simList <- replicate(sims,
-                       data.frame(predictor = rnorm(n, mean(predictor[[1]]), sd(predictor[[1]])),
-                                  response = rnorm(predictor[[1]] + sample(c(-1, 1), size = nrow(data), replace = TRUE, prob = c(0.36, 0.64)) * (effect * predictor[[1]]), sd(response[[1]]))),
-                       simplify = FALSE)
+  simsList <- list()
   
-  return(simList)
+  for (i in 1:sims) {
+    
+    # Simulate predictor variable
+    pred <- rtruncnorm(n, a = min(predictor[[1]]), b = max(predictor[[1]]),
+                       mean(predictor[[1]]), sd(predictor[[1]]))
+    # Produce simulated response variable
+    resp <- rnorm(n, mean = intercept + effect * pred)
+    # Create dataset combining simulated predictor with corresponding response
+    simsList[[i]] <- data.frame(predictor = pred, response = resp)
+    
+  }
+  
+  return(simsList)
   
 }
 
@@ -106,7 +117,7 @@ pValues <- function(data) {
     
     # Fit the model
     mod <- lm(response ~ predictor, data = data[[i]])
-    # Extract p-value from each model summary
+    # Extract p-value from each model summary using summary index
     pVals[i] <- summary(mod)[[4]][[8]]
      
     }
